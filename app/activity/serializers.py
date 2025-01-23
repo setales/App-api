@@ -19,4 +19,14 @@ class ActivityDetailSerializer(ActivitySerializer):
     """Serializer for activity detail view."""
 
     class Meta(ActivitySerializer.Meta):
-        fields = ActivitySerializer.Meta.fields + ['description']
+        fields = ActivitySerializer.Meta.fields + ['description', 'image']
+
+
+class ActivityImageSerializer(serializers.ModelSerializer):
+    """Serializer for uploading images to activities."""
+
+    class Meta:
+        model = Activity
+        fields = ['id', 'image']
+        read_only_fields = ['id']
+        extra_kwargs = {'image': {'required': 'True'}}

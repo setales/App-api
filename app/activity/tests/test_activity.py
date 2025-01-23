@@ -2,6 +2,10 @@
 Tests for activity APIs.
 """
 from decimal import Decimal
+import tempfile
+import os
+
+from PIL import Image
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -24,6 +28,11 @@ ACTIVITY_URL = reverse('activity:activity-list')
 def detail_url(activity_id):
     """Create and return an activity detail URL."""
     return reverse('activity:activity-detail', args=[activity_id])
+
+
+def image_upload_url(activity_id):
+    """Create and return an image upload URL."""
+    return reverse('activity:activity-upload-image', args=[activity_id])
 
 
 def create_activity(user, **params):
@@ -183,3 +192,42 @@ class PrivateActivityAPITests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue(Activity.objects.filter(id=activity.id).exists())
+
+
+class ImageUploadTests(TestCase):
+    """Tests for the image upload API."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            'user@example.com',
+            'password123',
+        )
+        self.client.force_authenticate(self.user)
+        self.activity = create_activity(user=self.user)
+
+    def tearDown(self):
+        self.activity.image.delete()
+
+    def test_upload_image(self):
+        """Test uploading an image to a activity."""
+        url = image_upload_url(self.activity.id)
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
+            img = Image.new('RGB', (10, 10))
+            img.save(image_file, format='JPEG')
+            image_file.seek(0)
+            payload = {'image': image_file}
+            res = self.client.post(url, payload, format='multipart')
+
+        self.activity.refresh_from_db()
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn('image', res.data)
+        self.assertTrue(os.path.exists(self.activity.image.path))
+
+    def test_upload_image_bad_request(self):
+        """Test uploading an invalid image."""
+        url = image_upload_url(self.activity.id)
+        payload = {'image': 'notanimage'}
+        res = self.client.post(url, payload, format='multipart')
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
