@@ -14,6 +14,8 @@ An educational project for building a REST API that allows users to add, view, a
 - **Create Travel Events/Activities**: Users can create, read, update, and delete events or activities with details like name, price, hours, link and description.
 - **Upload Images**: Support for uploading images associated with events/activities id.
 
+![App Screenshot](screenshot.png)
+
 ## Getting Started
 
 ### Prerequisites
